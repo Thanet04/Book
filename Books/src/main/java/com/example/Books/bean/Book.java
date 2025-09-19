@@ -23,4 +23,8 @@ public class Book {
     private String imageUrl;
     @Column
     private String price;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user; // เชื่อมกับ User
 }

@@ -26,12 +26,17 @@ public class BookService {
         this.cloudinary = cloudinary;
     }
 
-    // ดึงข้อมูลหนังสือทั้งหมด
+    // ข้อมูลหนังสือทั้งหมด
     public List<Book> getAllBooks() {
         return bookRepository.findAll();
     }
 
-    // ดึงข้อมูลหนังสือตาม ID
+    // ข้อมูลหนังสือเฉพาะ User 
+    public List<Book> getBookByUser(Long userId){
+        return bookRepository.findByUser(userId);
+    }
+
+    // ข้อมูลหนังสือตาม ID
     public Optional<Book> getBookById(Long id) {
         return bookRepository.findById(id);
     }

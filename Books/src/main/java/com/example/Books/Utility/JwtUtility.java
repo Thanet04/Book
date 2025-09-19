@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import com.example.Books.bean.User;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -41,6 +43,15 @@ public class JwtUtility {
             .getSubject();
     }
 
+    public Long extractUserId(String token) {
+        return Jwts.parserBuilder()
+            .setSigningKey(SECRET_KEY)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .get("id", Long.class);
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -50,6 +61,22 @@ public class JwtUtility {
             return true;
         } catch (JwtException e) {
             return false;
+        }
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                                .setSigningKey(SECRET_KEY)
+                                .build()
+                                .parseClaimsJws(token)
+                                .getBody();
+            Date expiration = claims.getExpiration();
+            return expiration.before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid token");
         }
     }
 }

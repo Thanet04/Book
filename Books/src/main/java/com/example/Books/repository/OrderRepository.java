@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.Books.bean.Order;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByUserId(Long userId); // ดึง order ของ user เฉพาะ
+    List<Order> findByUserId(Long userId); //  order ของ user เฉพาะ
 }

@@ -11,6 +11,9 @@ import com.example.Books.bean.Book;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
+
+    @Query("SELECT b FROM Book b WHERE b.user.id = :userId")
+    List<Book> findByUser(@Param("userId") Long userId);
     
     // ค้นหาหนังสือตามชื่อ (ใช้ Native SQL)
     @Query(value = "select * from books b where LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))", nativeQuery = true)

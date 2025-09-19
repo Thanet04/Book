@@ -9,12 +9,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.Books.DTO.ChangePassword;
 import com.example.Books.DTO.Register;
 import com.example.Books.DTO.UserDTO;
+import com.example.Books.Utility.JwtUtility;
 import com.example.Books.bean.User;
 import com.example.Books.service.UserService;
 
@@ -22,56 +24,62 @@ import com.example.Books.service.UserService;
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
-    
     @Autowired
     private UserService userService;
+    @Autowired
+    private JwtUtility jwtUtility;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUserID(@PathVariable Long id){
-        return userService.getUserById(id)
-                .map(user -> ResponseEntity.ok(
-                        new UserDTO(user.getEmail(), user.getUsername())
-                ))
+    // ข้อมูล user จาก token
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(@RequestHeader("Authorization") String token) {
+        Long userId = getUserIdFromToken(token);
+        return userService.getUserById(userId)
+                .map(user -> ResponseEntity.ok(new UserDTO(user.getEmail(), user.getUsername())))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody Register payload) {
-        return userService.updateUser(id, payload)
+    @PutMapping("/me")
+    public ResponseEntity<User> updateCurrentUser(
+            @RequestHeader("Authorization") String token,
+            @RequestBody Register payload) {
+        Long userId = getUserIdFromToken(token);
+        return userService.updateUser(userId, payload)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/me/change-password")
+    public ResponseEntity<String> changePassword(
+            @RequestHeader("Authorization") String token,
+            @RequestBody ChangePassword request) {
+        Long userId = getUserIdFromToken(token);
+        boolean changed = userService.changePassword(userId, request);
+        if (changed) return ResponseEntity.ok("Password changed successfully");
+        return ResponseEntity.badRequest().body("Old password is incorrect");
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteCurrentUser(@RequestHeader("Authorization") String token) {
+        Long userId = getUserIdFromToken(token);
+        boolean deleted = userService.deleteUser(userId);
+        if (deleted) return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody User request) {
         boolean success = userService.resetPassword(request.getEmail(), request.getPassword());
-        if (success) {
-            return ResponseEntity.ok("Password reset successfully");
-        } else {
-            return ResponseEntity.badRequest().body("Email not found");
+        if (success) return ResponseEntity.ok("Password reset successfully");
+        return ResponseEntity.badRequest().body("Email not found");
+    }
+
+    // ฟังก์ชันช่วยแปลง token เป็น userId
+    private Long getUserIdFromToken(String token) {
+        String jwt = token.replace("Bearer ", "");
+        if (jwtUtility.isTokenExpired(jwt)) {
+            throw new RuntimeException("Token expired");
         }
+        return jwtUtility.extractUserId(jwt);
     }
     
-
-    @PutMapping("/{id}/change-password")
-    public ResponseEntity<String> changePassword(
-            @PathVariable Long id,
-            @RequestBody ChangePassword request) {
-
-        boolean changed = userService.changePassword(id, request);
-
-        if (changed) {
-            return ResponseEntity.ok("Password changed successfully");
-        }
-        return ResponseEntity.badRequest().body("Old password is incorrect");
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        boolean deleted = userService.deleteUser(id);
-        if (deleted) return ResponseEntity.noContent().build();
-        return ResponseEntity.notFound().build();
-    }
-
 }

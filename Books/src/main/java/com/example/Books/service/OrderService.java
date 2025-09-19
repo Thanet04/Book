@@ -21,7 +21,7 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
-    // ดึง Orders ของ user
+    //  Orders ของ user
     public List<Order> getOrdersByUserId(Long userId) {
         return orderRepository.findByUserId(userId);
     }

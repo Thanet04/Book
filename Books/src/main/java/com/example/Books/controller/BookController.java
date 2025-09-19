@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.Books.Utility.JwtUtility;
 import com.example.Books.bean.Book;
 import com.example.Books.service.BookService;
 
@@ -28,15 +30,32 @@ public class BookController {
     
     @Autowired
     private BookService bookService;
+    @Autowired
+    private JwtUtility jwtUtility;
     
-    // ดึงข้อมูลหนังสือทั้งหมด
+    private Long getUserIdFromToken(String token) {
+        String jwt = token.replace("Bearer ", "");
+        if (jwtUtility.isTokenExpired(jwt)) {
+            throw new RuntimeException("Token expired");
+        }
+        return jwtUtility.extractUserId(jwt);
+    }
+    
+    // ข้อมูลหนังสือทั้งหมด
     @GetMapping
     public ResponseEntity<List<Book>> getAllBooks() {
         List<Book> books = bookService.getAllBooks();
         return ResponseEntity.ok(books);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<Book>> getBookByUser(@RequestHeader("Authorization") String token){
+        Long userId = getUserIdFromToken(token);
+        List<Book> books = bookService.getBookByUser(userId);
+        return ResponseEntity.ok(books);
+    }
     
-    // ดึงข้อมูลหนังสือตาม ID
+    // ข้อมูลหนังสือตาม ID
     @GetMapping("/{id}")
     public ResponseEntity<Book> getBookById(@PathVariable Long id) {
         Optional<Book> book = bookService.getBookById(id);
