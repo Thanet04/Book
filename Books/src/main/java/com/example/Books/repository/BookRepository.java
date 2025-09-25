@@ -1,6 +1,7 @@
 package com.example.Books.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,7 +13,7 @@ import com.example.Books.bean.Book;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    @Query("SELECT b FROM Book b WHERE b.user.id = :userId")
+    @Query("select b from Book b where b.user.id = :userId")
     List<Book> findByUser(@Param("userId") Long userId);
     
     // ค้นหาหนังสือตามชื่อ (ใช้ Native SQL)
@@ -25,5 +26,22 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     // ค้นหาหนังสือที่มีคำอธิบาย (JPQL)
     @Query("select b from Book b where b.description IS NOT NULL")
-    List<Book> findBooksWithDescription();
+    List<Book> findBooksDescription();
+
+    @Query(value = "select * from books order by id limit :limit offset :offset", nativeQuery = true)
+    List<Book> findAllBooks(@Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "select * from books where user_id = :userId order by id limit :limit offset :offset", nativeQuery = true)
+    List<Book> findByUser(@Param("userId") Long userId, @Param("limit") int limit, @Param("offset") int offset);
+
+    @Query(value = "select count(*) from books", nativeQuery = true)
+    int countAllBooks();
+
+    @Query(value = "select count(*) from books where user_id = :userId", nativeQuery = true)
+    int countBooksByUser(@Param("userId") Long userId);
+
+    @Query(value = "select * from books  where id = :id and user_id = :userId", nativeQuery = true)
+    Optional<Book> findByIdAndUser(@Param("id") Long id, @Param("userId") Long userId);
+
+
 }

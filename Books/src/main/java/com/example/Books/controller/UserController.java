@@ -1,17 +1,18 @@
 package com.example.Books.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.Books.DTO.ChangePassword;
 import com.example.Books.DTO.Register;
@@ -34,7 +35,7 @@ public class UserController {
     public ResponseEntity<UserDTO> getCurrentUser(@RequestHeader("Authorization") String token) {
         Long userId = getUserIdFromToken(token);
         return userService.getUserById(userId)
-                .map(user -> ResponseEntity.ok(new UserDTO(user.getEmail(), user.getUsername())))
+                .map(user -> ResponseEntity.ok(new UserDTO(user.getEmail(), user.getUsername(), user.getFullname())))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -77,7 +78,7 @@ public class UserController {
     private Long getUserIdFromToken(String token) {
         String jwt = token.replace("Bearer ", "");
         if (jwtUtility.isTokenExpired(jwt)) {
-            throw new RuntimeException("Token expired");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token หมดอายุ กรุณาเข้าสู่ระบบใหม่");
         }
         return jwtUtility.extractUserId(jwt);
     }

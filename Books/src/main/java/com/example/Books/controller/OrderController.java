@@ -1,8 +1,10 @@
 package com.example.Books.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,11 +15,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.example.Books.DTO.OrderDTO;
 import com.example.Books.Utility.JwtUtility;
 import com.example.Books.bean.Order;
-import com.example.Books.service.OrderService;
+import com.example.Books.bean.User;
+import com.example.Books.repository.OrderRepository;
+import com.example.Books.repository.UserRepository;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -25,7 +30,10 @@ import com.example.Books.service.OrderService;
 public class OrderController {
 
     @Autowired
-    private OrderService orderService;
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private JwtUtility jwtUtility;
@@ -34,7 +42,7 @@ public class OrderController {
     private Long getUserIdFromToken(String token) {
         String jwt = token.replace("Bearer ", "");
         if (jwtUtility.isTokenExpired(jwt)) {
-            throw new RuntimeException("Token expired");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token หมดอายุ กรุณาเข้าสู่ระบบใหม่");
         }
         return jwtUtility.extractUserId(jwt);
     }
@@ -43,7 +51,7 @@ public class OrderController {
     public ResponseEntity<List<Order>> getOrdersByUser(
             @RequestHeader("Authorization") String token) {
         Long userId = getUserIdFromToken(token);
-        List<Order> orders = orderService.getOrdersByUserId(userId);
+        List<Order> orders = orderRepository.findByUserId(userId);
         return ResponseEntity.ok(orders);
     }
 
@@ -52,8 +60,16 @@ public class OrderController {
             @RequestHeader("Authorization") String token,
             @RequestBody OrderDTO orderDTO) {
         Long userId = getUserIdFromToken(token);
-        Order createdOrder = orderService.createOrderForUser(userId, orderDTO);
-        return ResponseEntity.ok(createdOrder);
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Order order = new Order();
+        order.setTitle(orderDTO.getTitle());
+        order.setQuantity(orderDTO.getQuantity());
+        order.setPrice(orderDTO.getPrice());
+        order.setUser(user);
+
+        Order savedOrder = orderRepository.save(order);
+        return ResponseEntity.ok(savedOrder);
     }
 
     @DeleteMapping("/{orderId}")
@@ -61,8 +77,33 @@ public class OrderController {
             @RequestHeader("Authorization") String token,
             @PathVariable Long orderId) {
         Long userId = getUserIdFromToken(token);
-        boolean deleted = orderService.deleteOrderForUser(userId, orderId);
-        if (deleted) return ResponseEntity.noContent().build();
-        return ResponseEntity.notFound().build();
+
+        Optional<Order> optionalOrder = orderRepository.findById(orderId).filter(o -> o.getUser().getId().equals(userId));
+
+        if (optionalOrder.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        orderRepository.delete(optionalOrder.get());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<String> checkout(
+            @RequestHeader("Authorization") String token) {
+
+        Long userId = getUserIdFromToken(token);
+        List<Order> orders = orderRepository.findByUserId(userId);
+
+        if (orders.isEmpty()) {
+            return ResponseEntity.badRequest().body("ไม่มีคำสั่งซื้อสำหรับชำระเงิน");
+        }
+
+        double totalAmount = orders.stream().mapToDouble(o -> o.getPrice() * o.getQuantity()).sum();
+
+        // mock: หลังจากชำระเงินสำเร็จ ลบคำสั่งซื้อทั้งหมดของ user
+        orderRepository.deleteAll(orders);
+
+        return ResponseEntity.ok("ชำระเงินสำเร็จ ยอดรวม: " + totalAmount + " บาท");
     }
 }
