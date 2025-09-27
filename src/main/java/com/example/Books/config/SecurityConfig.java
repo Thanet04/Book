@@ -22,7 +22,7 @@ public class SecurityConfig {
                 config.setAllowedOrigins(List.of("*")); // frontend URL
                 config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
-                config.setAllowCredentials(true);
+                config.setAllowCredentials(false);
                 return config;
             }))
             .authorizeHttpRequests(auth -> auth
