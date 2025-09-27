@@ -19,7 +19,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())       // ปิด CSRF สำหรับ REST API
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of("http://localhost:3000")); // frontend URL
+                config.setAllowedOrigins(List.of("*")); // frontend URL
                 config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);
