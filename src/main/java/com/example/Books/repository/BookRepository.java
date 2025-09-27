@@ -17,11 +17,14 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByUser(@Param("userId") Long userId);
     
     // ค้นหาหนังสือตามชื่อ (ใช้ Native SQL)
-    @Query(value = "select * from books b where LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%'))", nativeQuery = true)
-    List<Book> searchByTitle(@Param("title") String title);
+    @Query(value = "select * from books b where lower(b.title) like lower(concat('%', :title, '%')) order by id limit :limit offset :offset", nativeQuery = true)
+    List<Book> searchByTitle(@Param("title") String title, @Param("limit") int limit, @Param("offset") int offset);
+    
+    @Query(value = "select count(*) from books b where lower(b.title) like lower(concat('%', :title, '%'))", nativeQuery = true)
+    int countByTitle(@Param("title") String title);
 
     // ค้นหาหนังสือตามผู้แต่ง (ใช้ Native SQL)
-    @Query(value = "select * from books b where LOWER(b.author) LIKE LOWER(CONCAT('%', :author, '%'))", nativeQuery = true)
+    @Query(value = "select * from books b where lower(b.author) like lower(concat('%', :author, '%'))", nativeQuery = true)
     List<Book> searchByAuthor(@Param("author") String author);
 
     // ค้นหาหนังสือที่มีคำอธิบาย (JPQL)

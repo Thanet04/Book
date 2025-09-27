@@ -175,12 +175,18 @@ public class BookController {
     
     // ค้นหาหนังสือตามชื่อ
     @GetMapping("/search/title")
-    public ResponseEntity<List<Book>> searchBooksByTitle(@RequestParam String q) {
-        List<Book> books = bookRepository.findAll()
-                .stream()
-                .filter(b -> b.getTitle().toLowerCase().contains(q.toLowerCase()))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(books);
+    public ResponseEntity<Map<String,Object>> searchBooksByTitle(
+            @RequestParam String title,
+            @RequestParam int page,
+            @RequestParam int size) {
+
+        int offset = page * size;
+        List<Book> books = bookRepository.searchByTitle(title, size, offset);
+        int total = bookRepository.countByTitle(title);
+        
+        Map<String,Object> response = Map.of("books", books, "total", total);
+        return ResponseEntity.ok(response);
+                
     }
     
     // ค้นหาหนังสือตามผู้แต่ง
