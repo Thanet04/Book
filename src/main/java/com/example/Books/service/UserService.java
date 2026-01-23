@@ -30,14 +30,22 @@ public class UserService {
                 user.setEmail(payload.getEmail());
             }
             if (payload.getUsername() != null && !payload.getUsername().isBlank()) {
-                user.setUsername(payload.getUsername());
+                String newUsername = payload.getUsername().toLowerCase().trim();
+    
+                // เช็ก username ซ้ำ
+                if (userRepository.existsByUsername(newUsername)
+                    && !newUsername.equals(user.getUsername())) {
+                    throw new RuntimeException("Username already exists");
+                }
+    
+                user.setUsername(newUsername);
             }
             return userRepository.save(user);
         });
     }       
 
-    public boolean resetPassword(String email, String newPassword) {
-        return userRepository.findByEmail(email).map(user -> {
+    public boolean resetPassword(String username, String newPassword) {
+        return userRepository.findByUsername(username).map(user -> {
             user.setPassword(newPassword);
             userRepository.save(user);
             return true;

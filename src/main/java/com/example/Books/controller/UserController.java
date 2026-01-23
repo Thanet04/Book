@@ -69,9 +69,9 @@ public class UserController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody User request) {
-        boolean success = userService.resetPassword(request.getEmail(), request.getPassword());
+        boolean success = userService.resetPassword(request.getUsername(), request.getPassword());
         if (success) return ResponseEntity.ok("Password reset successfully");
-        return ResponseEntity.badRequest().body("Email not found");
+        return ResponseEntity.badRequest().body("Username not found");
     }
 
     // ฟังก์ชันช่วยแปลง token เป็น userId

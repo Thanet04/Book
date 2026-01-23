@@ -15,20 +15,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository UserRepository;
+    private final UserRepository userRepository;
     private final JwtUtility jwtutil;
 
     public void register(Register request){
+        String username = request.getUsername().toLowerCase().trim();
+
+        if (userRepository.existsByUsername(username)) {
+            throw new RuntimeException("USERNAME_EXISTS");
+        }
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setFullname(request.getFullname());
         user.setEmail(request.getEmail());
         user.setPassword(request.getPassword());
-        UserRepository.save(user);
+        userRepository.save(user);
     }
 
     public AuthResponse authenticate(Auth request){
-        User user = UserRepository.findByUsername(request.getUsername())
+        User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("user not found"));
     
         if(!request.getPassword().equals(user.getPassword())){
